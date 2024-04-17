@@ -16,35 +16,71 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  var name = ['김영숙', '홍길동', '피자집'];
+
+  var total = 3;
+  var user = [ ['김영숙', '01011111111'], ['홍길동', '01022222222'], ['피자집', '01033333333'] ];
+  var like = [0, 0, 0];
+
+  addOne() {
+    setState(() {
+      total++;
+    });
+  }
+
+  addName(a) {
+    setState(() {
+      if (a != '') {
+        user.add([a, '0']);
+      }
+    });
+  }
 
   @override
   build(context) {
-
     return Scaffold(
         floatingActionButton: FloatingActionButton(
           onPressed: (){
             showDialog(context: context, builder: (context){
-              return DialogUI();
+              return DialogUI( addOne : addOne, addName : addName,);
             });
           },
         ),
-        appBar: AppBar(),
+        appBar: AppBar( title: Text(total.toString(), )),
         body: ListView.builder(
-          itemCount: 3,
-          itemBuilder: (c, i){
-            return ListTile(
-              leading: Image.asset('BaekJoon.png'),
-              title: Text(name[i]),
-            );
-          })
+              itemCount: user.length,
+              itemBuilder: (c, i){
+                return ListTile(
+                  leading: Image.asset('BaekJoon.png'),
+                  title: Text(user[i][0]),
+                  subtitle: Text(user[i][1]),
+                  trailing: ElevatedButton(
+                    child: Text('삭제'),
+                    onPressed: (){
+                      setState(() {
+                        user.remove(user[i]);
+                      });
+                    }
+                  )
+                );
+                }
+        ),
+        bottomNavigationBar: ElevatedButton(
+          child: Text('정렬'),
+          onPressed: (){
+            setState(() {
+              user.sort();
+            });
+          },
+        ),
       );
 
   }
 }
 
 class DialogUI extends StatelessWidget {
-  const DialogUI({super.key});
+  DialogUI({super.key, this.addOne, this.addName});
+  final addOne, addName;
+  var inputData = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -54,8 +90,14 @@ class DialogUI extends StatelessWidget {
         height: 300,
         child: Column(
           children: [
-            TextField(),
-            TextButton( child: Text('완료'), onPressed: (){}),
+            TextField( controller: inputData, ),
+            TextButton(
+              child: Text('완료'),
+              onPressed: (){
+                addOne();
+                addName(inputData.text);
+                Navigator.pop(context);
+              }),
             TextButton(
               child: Text('취소'),
               onPressed: (){ Navigator.pop(context); },
