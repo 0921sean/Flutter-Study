@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:contacts_service/contacts_service.dart';
 
 void main() {
   runApp(
@@ -17,58 +19,54 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
 
-  var total = 3;
-  var user = [ ['김영숙', '01011111111'], ['홍길동', '01022222222'], ['피자집', '01033333333'] ];
-  var like = [0, 0, 0];
+  getPermission() async {
+    var status = await Permission.contacts.status;
+    if (status.isGranted) {
+      print('허락됨');
+      var contacts = await ContactsService.getContacts();
+      setState(() {
+        name = contacts;
+      });
 
-  addOne() {
-    setState(() {
-      total++;
-    });
+    } else if (status.isDenied) {
+      print('거절됨');
+      Permission.contacts.request();
+    }
   }
 
-  addName(a) {
+  var total = 3;
+  List<Contact> name = [];
+  var like = [0, 0, 0];
+
+  addName(a) async {
+    var newPerson = Contact();
+    newPerson.givenName = a;
+    await ContactsService.addContact(newPerson);
+
     setState(() {
-      if (a != '') {
-        user.add([a, '0']);
-      }
+      name.add(a);
     });
   }
 
   @override
   build(context) {
     return Scaffold(
-        floatingActionButton: FloatingActionButton(
-          onPressed: (){
-            showDialog(context: context, builder: (context){
-              return DialogUI( addOne : addOne, addName : addName,);
-            });
-          },
-        ),
-        appBar: AppBar( title: Text(total.toString(), )),
+        appBar: AppBar( title: Text(total.toString()), actions: [
+          IconButton(onPressed: (){ getPermission(); }, icon: Icon(Icons.contacts))
+        ],),
         body: ListView.builder(
-              itemCount: user.length,
+              itemCount: name.length,
               itemBuilder: (c, i){
                 return ListTile(
-                  leading: Image.asset('BaekJoon.png'),
-                  title: Text(user[i][0]),
-                  subtitle: Text(user[i][1]),
-                  trailing: ElevatedButton(
-                    child: Text('삭제'),
-                    onPressed: (){
-                      setState(() {
-                        user.remove(user[i]);
-                      });
-                    }
-                  )
+                  leading: Image.asset('assets/BaekJoon.png'),
+                  title: Text(name[i].givenName ?? '이름이없는놈'),
                 );
                 }
         ),
-        bottomNavigationBar: ElevatedButton(
-          child: Text('정렬'),
+        floatingActionButton: FloatingActionButton(
           onPressed: (){
-            setState(() {
-              user.sort();
+            showDialog(context: context, builder: (context){
+              return DialogUI( addName : addName,);
             });
           },
         ),
@@ -78,8 +76,8 @@ class _MyAppState extends State<MyApp> {
 }
 
 class DialogUI extends StatelessWidget {
-  DialogUI({super.key, this.addOne, this.addName});
-  final addOne, addName;
+  DialogUI({super.key, this.addName});
+  final addName;
   var inputData = TextEditingController();
 
   @override
@@ -90,11 +88,19 @@ class DialogUI extends StatelessWidget {
         height: 300,
         child: Column(
           children: [
-            TextField( controller: inputData, ),
+            TextField(
+              controller: inputData,
+              decoration: InputDecoration(
+                hintText: 'hint',
+                hintStyle: TextStyle(color: Colors.green),
+                helperText: 'helper',
+                labelText: 'label',
+                counterText: 'counter'
+              ),
+            ),
             TextButton(
               child: Text('완료'),
               onPressed: (){
-                addOne();
                 addName(inputData.text);
                 Navigator.pop(context);
               }),
